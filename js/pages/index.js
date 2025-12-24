@@ -3,18 +3,19 @@
   import { userProfileRef, usersDirectoryDoc } from "./js/core/paths.js";
   import { isWithinSchedule } from "./js/core/guards.js";
 
+  // PATCH: Corregido de 11.6.1 a 11.0.2 para coincidir con el núcleo del sistema
   import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut
-  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
   import {
     getDoc,
     setDoc,
     updateDoc,
     arrayUnion
-  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
   // ====== CONFIG EMERGENCY ADMIN ======
   const EMERGENCY_EMAIL = `admin${DOMAIN_SUFFIX}`;   // admin@mediflow.sys
