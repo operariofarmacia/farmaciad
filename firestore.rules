@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+match /databases/{database}/documents {
+
+// --- Functions ---
+function isSignedIn() {
+  return request.auth != null;
+}
+
+function getUserProfile() {
+  return get(/databases/$(database)/documents/artifacts/$(request.resource.data.appId)/users/$(request.auth.uid)/profile/data).data;
+}
+
+function hasRole(role) {
+  let profile = get(/databases/$(database)/documents/artifacts/fdihss-mediflow-v2-modular/users/$(request.auth.uid)/profile/data).data;
+  return profile.role == role;
+}
+
+function isAdmin() {
+  return hasRole('admin');
+}
+
+// --- Artifacts Scope ---
+match /artifacts/fdihss-mediflow-v2-modular {
+  
+  // 1. Users & Profiles
+  match /users/{userId}/profile/data {
+    // Owner reads own, Admin reads all. Write only Admin.
+    allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    allow write: if isAdmin();
+  }
+
+  // 2. Public Data Scope
+  match /public/data {
+    
+    // Users Directory
+    match /users_directory/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Beneficiaries
+    match /beneficiaries/{docId} {
+      // Read: All operational roles
+      allow read: if isSignedIn() && (isAdmin() || hasRole('farmacia') || hasRole('contact_center') || hasRole('operaciones') || hasRole('calidad') || hasRole('logistica') || hasRole('repartidor'));
+      // Write: All EXCEPT repartidor
+      allow write: if isSignedIn() && (isAdmin() || hasRole('farmacia') || hasRole('contact_center') || hasRole('operaciones') || hasRole('calidad') || hasRole('logistica'));
+    }
+
+    // Shipments
+    match /shipments/{docId} {
+      allow read: if isSignedIn(); // Broad read for tracking, or restrict strictly
+      // Write: Operational roles + Repartidor (for status update)
+      allow write: if isSignedIn() && (isAdmin() || hasRole('farmacia') || hasRole('contact_center') || hasRole('operaciones') || hasRole('calidad') || hasRole('logistica') || hasRole('repartidor'));
+    }
+
+    // Geographic Areas
+    match /geographic_areas/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Notifications
+    match /notifications/{docId} {
+      allow read: if isSignedIn() && (resource.data.toUid == request.auth.uid || resource.data.toRole == get(/databases/$(database)/documents/artifacts/fdihss-mediflow-v2-modular/users/$(request.auth.uid)/profile/data).data.role);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn(); // To mark as read
+      allow delete: if isAdmin();
+    }
+  }
+}
+
+
+}
+}
